@@ -1,0 +1,65 @@
+ITUB4:Financeiro
+BBDC4:Financeiro
+BBAS3:Financeiro
+SANB11:Financeiro
+BPAC11:Financeiro
+B3SA3:Financeiro
+BBSE3:Financeiro
+CXSE3:Financeiro
+ITSA4:Financeiro
+PETR4:Petróleo e Gás
+PETR3:Petróleo e Gás
+PRIO3:Petróleo e Gás
+RECV3:Petróleo e Gás
+BRAV3:Petróleo e Gás
+CSAN3:Petróleo e Gás
+VBBR3:Petróleo e Gás
+UGPA3:Petróleo e Gás
+VALE3:Mineração e Siderurgia
+GGBR4:Mineração e Siderurgia
+GOAU4:Mineração e Siderurgia
+CSNA3:Mineração e Siderurgia
+USIM5:Mineração e Siderurgia
+CMIN3:Mineração e Siderurgia
+ELET3:Energia e Saneamento
+EQTL3:Energia e Saneamento
+CMIG4:Energia e Saneamento
+TAEE11:Energia e Saneamento
+ENGI11:Energia e Saneamento
+EGIE3:Energia e Saneamento
+CPFE3:Energia e Saneamento
+SBSP3:Energia e Saneamento
+ABEV3:Consumo e Varejo
+LREN3:Consumo e Varejo
+MGLU3:Consumo e Varejo
+ASAI3:Consumo e Varejo
+RADL3:Consumo e Varejo
+CRFB3:Consumo e Varejo
+VIVA3:Consumo e Varejo
+AZZA3:Consumo e Varejo
+SMFT3:Consumo e Varejo
+RDOR3:Saúde
+HAPV3:Saúde
+FLRY3:Saúde
+HYPE3:Saúde
+WEGE3:Indústria e Transporte
+EMBR3:Indústria e Transporte
+RAIL3:Indústria e Transporte
+POMO4:Indústria e Transporte
+RENT3:Indústria e Transporte
+AZUL4:Indústria e Transporte
+SUZB3:Papel, Agro e Alimentos
+KLBN11:Papel, Agro e Alimentos
+SLCE3:Papel, Agro e Alimentos
+MRFG3:Papel, Agro e Alimentos
+BEEF3:Papel, Agro e Alimentos
+VIVT3:Telecom e Tecnologia
+TIMS3:Telecom e Tecnologia
+TOTS3:Telecom e Tecnologia
+CYRE3:Imobiliário
+MRVE3:Imobiliário
+EZTC3:Imobiliário
+DIRR3:Imobiliário
+CURY3:Imobiliário
+MULT3:Imobiliário
+ALOS3:Imobiliário
