@@ -98,7 +98,8 @@ export function parseUniverso(txt) {
     const m = ln.trim().match(/^([A-Za-z0-9]{4,7})\s*[:;,\t]\s*(.+)$/);
     if (!m) continue;
     const t = m[1].toUpperCase(); if (seen.has(t)) continue; seen.add(t);
-    out.push({ t, setor: m[2].trim() });
+    const [setor, nome] = m[2].split(":").map((x) => x.trim());
+    out.push({ t, setor, nome: nome || t });
   }
   return out;
 }

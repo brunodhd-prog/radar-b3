@@ -100,6 +100,23 @@ select{background:var(--panel2);border:1px solid var(--line2);border-radius:4px;
 .facts span{display:block;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
 .facts b{font-family:var(--f-data);font-variant-numeric:tabular-nums}
 
+/* Notícias */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px;min-width:0}
+.tile span{display:block;font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.tile b{display:block;font-family:var(--f-disp);font-size:24px;font-weight:700;line-height:1.2}
+.tile small{color:var(--dim);font-size:11px;font-family:var(--f-data)}
+.news{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px}
+.tblwrap{overflow-x:auto}
+table.nt{width:100%;border-collapse:collapse;font-size:12.5px;min-width:640px}
+.nt th{font-weight:500;color:var(--dim);text-transform:uppercase;font-size:10px;letter-spacing:.06em;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.nt td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.nt .r{text-align:right;font-family:var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+.nt a{color:var(--fg);text-decoration:none} .nt a:hover{text-decoration:underline}
+.nt .src{display:block;color:var(--dim);font-size:11px}
+.nt .tk{font-family:var(--f-disp);font-weight:700;cursor:pointer;background:none;border:0;padding:0}
+.ok{color:var(--up)} .ko{color:var(--dn)}
+
 /* Config */
 .cfg{max-width:720px}
 .cfg label{display:block;font-size:12px;color:var(--mute);margin:10px 0 4px}
@@ -112,7 +129,7 @@ select{background:var(--panel2);border:1px solid var(--line2);border-radius:4px;
 footer{margin-top:20px;color:var(--dim);font-size:11.5px;max-width:80ch}
 
 @media (max-width:860px){
-  .xray,.board,.rrg{grid-template-columns:minmax(0,1fr)}
+  .xray,.board,.rrg,.news{grid-template-columns:minmax(0,1fr)}
   #cvX{height:320px} #cvR{height:380px} #cvC{height:340px}
   .lv{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
@@ -132,6 +149,7 @@ footer{margin-top:20px;color:var(--dim);font-size:11.5px;max-width:80ch}
   <button role="tab" data-v="painel" aria-selected="false">Painel</button>
   <button role="tab" data-v="rotacao" aria-selected="false">Rotação</button>
   <button role="tab" data-v="grafico" aria-selected="false">Gráfico</button>
+  <button role="tab" data-v="noticias" aria-selected="false">Notícias</button>
   <button role="tab" data-v="config" aria-selected="false">Configurar</button>
 </nav>
 <div id="banner" class="banner" hidden></div>
@@ -165,6 +183,22 @@ footer{margin-top:20px;color:var(--dim);font-size:11.5px;max-width:80ch}
     </div>
   </section>
 
+  <section class="view" id="v-noticias" hidden>
+    <div class="tiles" id="nTiles"></div>
+    <div class="news">
+      <div class="box">
+        <h2><span>Notícias classificadas</span>
+          <span class="seg" id="segN"><button data-f="todas" aria-pressed="true">Todas</button><button data-f="pos" aria-pressed="false">Positivas</button><button data-f="neg" aria-pressed="false">Negativas</button></span></h2>
+        <div class="tblwrap"><table class="nt"><thead><tr><th>Sessão</th><th>Papel</th><th>Sentimento</th><th>Manchete</th><th class="r">1p</th><th class="r">3p</th><th class="r">5p</th></tr></thead><tbody id="nBody"></tbody></table></div>
+      </div>
+      <div class="box">
+        <h2><span>Acerto por fonte</span><span class="mute num" style="font-size:11px">3 pregões</span></h2>
+        <div id="nFontes" class="legend"></div>
+        <p class="mute" style="font-size:11.5px;margin-top:12px;max-width:60ch" id="nNota"></p>
+      </div>
+    </div>
+  </section>
+
   <section class="view" id="v-config" hidden>
     <div class="box cfg">
       <h2><span>Fonte de dados</span></h2>
@@ -182,71 +216,71 @@ footer{margin-top:20px;color:var(--dim);font-size:11.5px;max-width:80ch}
 <script>
 "use strict";
 /* ===================== Universo padrão ===================== */
-const UNIVERSO_PADRAO = `ITUB4:Financeiro
-BBDC4:Financeiro
-BBAS3:Financeiro
-SANB11:Financeiro
-BPAC11:Financeiro
-B3SA3:Financeiro
-BBSE3:Financeiro
-CXSE3:Financeiro
-ITSA4:Financeiro
-PETR4:Petróleo e Gás
-PETR3:Petróleo e Gás
-PRIO3:Petróleo e Gás
-RECV3:Petróleo e Gás
-BRAV3:Petróleo e Gás
-CSAN3:Petróleo e Gás
-VBBR3:Petróleo e Gás
-UGPA3:Petróleo e Gás
-VALE3:Mineração e Siderurgia
-GGBR4:Mineração e Siderurgia
-GOAU4:Mineração e Siderurgia
-CSNA3:Mineração e Siderurgia
-USIM5:Mineração e Siderurgia
-CMIN3:Mineração e Siderurgia
-ELET3:Energia e Saneamento
-EQTL3:Energia e Saneamento
-CMIG4:Energia e Saneamento
-TAEE11:Energia e Saneamento
-ENGI11:Energia e Saneamento
-EGIE3:Energia e Saneamento
-CPFE3:Energia e Saneamento
-SBSP3:Energia e Saneamento
-ABEV3:Consumo e Varejo
-LREN3:Consumo e Varejo
-MGLU3:Consumo e Varejo
-ASAI3:Consumo e Varejo
-RADL3:Consumo e Varejo
-CRFB3:Consumo e Varejo
-VIVA3:Consumo e Varejo
-AZZA3:Consumo e Varejo
-SMFT3:Consumo e Varejo
-RDOR3:Saúde
-HAPV3:Saúde
-FLRY3:Saúde
-HYPE3:Saúde
-WEGE3:Indústria e Transporte
-EMBR3:Indústria e Transporte
-RAIL3:Indústria e Transporte
-POMO4:Indústria e Transporte
-RENT3:Indústria e Transporte
-AZUL4:Indústria e Transporte
-SUZB3:Papel, Agro e Alimentos
-KLBN11:Papel, Agro e Alimentos
-SLCE3:Papel, Agro e Alimentos
-MRFG3:Papel, Agro e Alimentos
-BEEF3:Papel, Agro e Alimentos
-VIVT3:Telecom e Tecnologia
-TIMS3:Telecom e Tecnologia
-TOTS3:Telecom e Tecnologia
-CYRE3:Imobiliário
-MRVE3:Imobiliário
-EZTC3:Imobiliário
-DIRR3:Imobiliário
-CURY3:Imobiliário
-MULT3:Imobiliário
-ALOS3:Imobiliário`;
+const UNIVERSO_PADRAO = `ITUB4:Financeiro:Itaú Unibanco
+BBDC4:Financeiro:Bradesco
+BBAS3:Financeiro:Banco do Brasil
+SANB11:Financeiro:Santander Brasil
+BPAC11:Financeiro:BTG Pactual
+B3SA3:Financeiro:B3 bolsa
+BBSE3:Financeiro:BB Seguridade
+CXSE3:Financeiro:Caixa Seguridade
+ITSA4:Financeiro:Itaúsa
+PETR4:Petróleo e Gás:Petrobras
+PETR3:Petróleo e Gás:Petrobras
+PRIO3:Petróleo e Gás:PRIO petróleo
+RECV3:Petróleo e Gás:PetroReconcavo
+BRAV3:Petróleo e Gás:Brava Energia
+CSAN3:Petróleo e Gás:Cosan
+VBBR3:Petróleo e Gás:Vibra Energia
+UGPA3:Petróleo e Gás:Ultrapar
+VALE3:Mineração e Siderurgia:Vale mineradora
+GGBR4:Mineração e Siderurgia:Gerdau
+GOAU4:Mineração e Siderurgia:Metalúrgica Gerdau
+CSNA3:Mineração e Siderurgia:CSN Siderúrgica
+USIM5:Mineração e Siderurgia:Usiminas
+CMIN3:Mineração e Siderurgia:CSN Mineração
+ELET3:Energia e Saneamento:Eletrobras
+EQTL3:Energia e Saneamento:Equatorial
+CMIG4:Energia e Saneamento:Cemig
+TAEE11:Energia e Saneamento:Taesa
+ENGI11:Energia e Saneamento:Energisa
+EGIE3:Energia e Saneamento:Engie Brasil
+CPFE3:Energia e Saneamento:CPFL Energia
+SBSP3:Energia e Saneamento:Sabesp
+ABEV3:Consumo e Varejo:Ambev
+LREN3:Consumo e Varejo:Lojas Renner
+MGLU3:Consumo e Varejo:Magazine Luiza
+ASAI3:Consumo e Varejo:Assaí
+RADL3:Consumo e Varejo:Raia Drogasil
+CRFB3:Consumo e Varejo:Carrefour Brasil
+VIVA3:Consumo e Varejo:Vivara
+AZZA3:Consumo e Varejo:Azzas 2154
+SMFT3:Consumo e Varejo:Smart Fit
+RDOR3:Saúde:Rede D'Or
+HAPV3:Saúde:Hapvida
+FLRY3:Saúde:Fleury
+HYPE3:Saúde:Hypera
+WEGE3:Indústria e Transporte:WEG
+EMBR3:Indústria e Transporte:Embraer
+RAIL3:Indústria e Transporte:Rumo
+POMO4:Indústria e Transporte:Marcopolo
+RENT3:Indústria e Transporte:Localiza
+AZUL4:Indústria e Transporte:Azul linhas aéreas
+SUZB3:Papel, Agro e Alimentos:Suzano
+KLBN11:Papel, Agro e Alimentos:Klabin
+SLCE3:Papel, Agro e Alimentos:SLC Agrícola
+MRFG3:Papel, Agro e Alimentos:Marfrig
+BEEF3:Papel, Agro e Alimentos:Minerva Foods
+VIVT3:Telecom e Tecnologia:Vivo Telefônica
+TIMS3:Telecom e Tecnologia:TIM Brasil
+TOTS3:Telecom e Tecnologia:Totvs
+CYRE3:Imobiliário:Cyrela
+MRVE3:Imobiliário:MRV
+EZTC3:Imobiliário:EZTec
+DIRR3:Imobiliário:Direcional
+CURY3:Imobiliário:Cury construtora
+MULT3:Imobiliário:Multiplan
+ALOS3:Imobiliário:Allos shoppings`;
 const BENCH = "BOVA11";
 
 /* ===================== Utilidades ===================== */
@@ -267,7 +301,8 @@ function parseUniverso(txt){
     const m = ln.trim().match(/^([A-Za-z0-9]{4,7})\s*[:;,\t]\s*(.+)$/);
     if(!m) continue;
     const t=m[1].toUpperCase(); if(seen.has(t)) continue; seen.add(t);
-    out.push({t, setor:m[2].trim()});
+    const [setor,nome]=m[2].split(":").map(x=>x.trim());
+    out.push({t, setor, nome:nome||t});
   }
   return out;
 }
@@ -428,6 +463,7 @@ async function carregar(){
   if(store.get("rb3_modo")==="demo"){
     ST.data=gerarDemo(univ);
     $("#banner").innerHTML="<b>Modo simulado ativo.</b> Os números são gerados para demonstração. Em Configurar, clique em Carregar dados reais.";
+    ST.news=gerarDemoNoticias(ST.data);
     return render();
   }
   $("#pill").textContent="carregando"; $("#pill").className="pill";
@@ -440,6 +476,7 @@ async function carregar(){
     $("#banner").innerHTML=`<b>Dados reais indisponíveis</b> (${e.message}). Mostrando dados simulados. Os dados reais aparecem quando a página roda junto do arquivo gerado pela rotina da nuvem.`;
     log("Dados reais indisponíveis: "+e.message);
   }
+  await carregarNoticias();
   render();
 }
 
@@ -454,6 +491,7 @@ function draw(){
   if(ST.view==="painel") drawBoard();
   if(ST.view==="rotacao") drawRRG();
   if(ST.view==="grafico") drawChart();
+  if(ST.view==="noticias") drawNews();
 }
 function canvas(cv){
   const r=cv.getBoundingClientRect(), d=window.devicePixelRatio||1;
@@ -501,7 +539,7 @@ function card(a,lado){
   return `<button type="button" class="card ${lado}" data-t="${a.t}">
     <div><div class="tk">${a.t}</div><div class="sub">${a.setor} · R$ <span class="num">${fmt(a.c)}</span></div></div>
     <div class="chg ${cls}">${pct(a.r1)}</div>
-    <div class="chips"><span class="chip ${fc}">${fl}</span><span class="chip n">vol ${fmt(a.vr,1)}×</span><span class="chip n">5p ${pct(a.r5,1)}</span>${a.tend>0?'<span class="chip u">acima MME20</span>':'<span class="chip d">abaixo MME20</span>'}</div>
+    <div class="chips"><span class="chip ${fc}">${fl}</span><span class="chip n">vol ${fmt(a.vr,1)}×</span><span class="chip n">5p ${pct(a.r5,1)}</span>${a.tend>0?'<span class="chip u">acima MME20</span>':'<span class="chip d">abaixo MME20</span>'}${chipNoticia(a.t)}</div>
     <canvas data-spark="${a.t}"></canvas>
     <div class="lv">
       <div><span>Suporte</span><b>${fmt(a.suporte)}</b></div>
@@ -592,6 +630,90 @@ function drawChart(){
   $("#facts").innerHTML=f.map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join("");
 }
 
+/* ===================== Notícias ===================== */
+async function carregarNoticias(){
+  if(ST.data.fonte!=="brapi"){ ST.news=gerarDemoNoticias(ST.data); return; }
+  try{
+    const r=await fetch("data/noticias.json?t="+Math.floor(Date.now()/60e3),{cache:"no-store"});
+    if(!r.ok) throw new Error(r.status===404?"data/noticias.json ainda não foi gerado":"HTTP "+r.status);
+    const d=await r.json(); if(!d||!Array.isArray(d.itens)) throw new Error("formato inesperado");
+    d.simulado=false; ST.news=d;
+  }catch(e){ ST.news={itens:[],erro:e.message,limiar:0.3,simulado:false}; }
+}
+function gerarDemoNoticias(data){
+  const R=mulberry32(77), itens=[], dia=x=>new Date(x*1000).toISOString().slice(0,10);
+  const P=["{n} tem lucro acima do esperado no trimestre","{n} anuncia recompra de ações","Analistas elevam preço-alvo de {t}","{n} aprova pagamento de dividendos","{t} dispara após acordo bilionário"];
+  const N=["{n} reporta prejuízo e ações caem","Banco rebaixa recomendação de {t}","{n} recebe multa do regulador","{t} despenca com guidance fraco","{n} adia investimentos e frustra mercado"];
+  const Z=["{n} divulga calendário de resultados","{n} realiza assembleia de acionistas","{t}: o que esperar da semana"];
+  const F=["InfoMoney","Valor Econômico","Exame","Money Times","Seu Dinheiro","Brazil Journal"];
+  for(const s of data.stocks){ const b=s.bars, n=b.length;
+    for(let i=n-45;i<n;i++){ if(R()>0.07) continue;
+      const fut=b[Math.min(n-1,i+2)].c/b[i-1].c-1, v=fut*3+(R()-0.5)*1.4, tipo=v>0.35?"pos":v<-0.35?"neg":"neu";
+      const tpl=(tipo==="pos"?P:tipo==="neg"?N:Z)[Math.floor(R()*5)%(tipo==="neu"?3:5)];
+      const score=tipo==="neu"?(R()-0.5)*0.3:(tipo==="pos"?1:-1)*(0.4+R()*0.55);
+      const it={id:s.t+i,t:s.t,titulo:tpl.replace("{n}",s.nome===s.t?s.t:s.nome).replace("{t}",s.t),fonte:F[Math.floor(R()*F.length)],link:"",
+        pub:new Date((b[i].d-3600*5)*1000).toISOString(),sessao:dia(b[i].d),rotulo:tipo,score:+score.toFixed(3),conf:0.6+R()*0.39};
+      const bm=new Map(data.bench.bars.map(x=>[x.d,x.c]));
+      [1,3,5].forEach(k=>{ const j=i-1+k; if(j<n){ const b0=bm.get(b[i-1].d), bk=bm.get(b[j].d); if(b0&&bk) it["r"+k]=(b[j].c/b[i-1].c-1)-(bk/b0-1); }});
+      itens.push(it);
+    }}
+  itens.sort((a,b)=>b.pub.localeCompare(a.pub));
+  return {itens,limiar:0.3,simulado:true,modelo:"simulado"};
+}
+function metricasNoticias(news){
+  const L=news.limiar??0.3, it=news.itens, sinais=it.filter(x=>Math.abs(x.score)>=L);
+  const acerto=k=>{ const a=sinais.filter(x=>x["r"+k]!=null); return {n:a.length,p:a.length?a.filter(x=>Math.sign(x.score)===Math.sign(x["r"+k])).length/a.length:null}; };
+  const ev=it.filter(x=>x.r3!=null), xs=ev.map(x=>x.score), ys=ev.map(x=>x.r3);
+  let ic=null; if(ev.length>=5){ const mx=mean(xs),my=mean(ys); const cov=mean(xs.map((x,i)=>(x-mx)*(ys[i]-my))); ic=cov/(Math.sqrt(mean(xs.map(x=>(x-mx)**2)))*Math.sqrt(mean(ys.map(y=>(y-my)**2)))||1); }
+  const pos=sinais.filter(x=>x.score>0&&x.r3!=null), neg=sinais.filter(x=>x.score<0&&x.r3!=null);
+  const spread=pos.length&&neg.length? mean(pos.map(x=>x.r3))-mean(neg.map(x=>x.r3)) : null;
+  const sete=Date.now()-7*864e5, rec=it.filter(x=>Date.parse(x.pub)>=sete);
+  const fontes={}; for(const x of sinais){ if(x.r3==null) continue; const f=(fontes[x.fonte] ||= {n:0,ok:0}); f.n++; if(Math.sign(x.score)===Math.sign(x.r3)) f.ok++; }
+  return {L,a1:acerto(1),a3:acerto(3),a5:acerto(5),ic,nic:ev.length,spread,rec:rec.length,rpos:rec.filter(x=>x.score>=L).length,rneg:rec.filter(x=>x.score<=-L).length,fontes};
+}
+function sentimentoRecente(t){
+  if(!ST.news||!ST.news.itens.length) return null;
+  const s=ST.data.stocks.find(x=>x.t===t); if(!s) return null;
+  const desde=new Date(s.bars[Math.max(0,s.bars.length-3)].d*1000).toISOString().slice(0,10);
+  const it=ST.news.itens.filter(x=>x.t===t&&x.sessao>=desde&&Math.abs(x.score)>=(ST.news.limiar??0.3));
+  if(!it.length) return null; return {soma:it.reduce((a,x)=>a+x.score,0),n:it.length};
+}
+function chipNoticia(t){ const s=sentimentoRecente(t); if(!s) return "";
+  return `<span class="chip ${s.soma>=0?"u":"d"}" title="${s.n} notícia(s) nos últimos 3 pregões">notícias ${s.soma>=0?"+":"−"}${fmt(Math.abs(s.soma),1)}</span>`; }
+let filtroN="todas";
+function drawNews(){
+  const N=ST.news||{itens:[]};
+  if(!N.itens.length){
+    $("#nTiles").innerHTML=""; $("#nFontes").innerHTML="";
+    $("#nBody").innerHTML=`<tr><td colspan="7" class="mute">Nenhuma notícia ainda${N.erro?` (${N.erro})`:""}. A rotina de notícias roda de hora em hora e grava data/noticias.json.</td></tr>`;
+    $("#nNota").textContent=""; return;
+  }
+  const m=metricasNoticias(N), pc=a=>a.p==null?"—":fmt(a.p*100,0)+"%";
+  const tile=(k,v,sub,cls="")=>`<div class="tile"><span>${k}</span><b class="${cls}">${v}</b><small>${sub}</small></div>`;
+  const cls=a=>a.p==null?"":a.p>=0.55?"up":a.p<0.5?"dn":"";
+  $("#nTiles").innerHTML=
+    tile("Notícias · 7 dias",m.rec,`<span class="up">${m.rpos} pos</span> · <span class="dn">${m.rneg} neg</span>`)+
+    tile("Acerto 1 pregão",pc(m.a1),`n = ${m.a1.n}`,cls(m.a1))+
+    tile("Acerto 3 pregões",pc(m.a3),`n = ${m.a3.n}`,cls(m.a3))+
+    tile("Acerto 5 pregões",pc(m.a5),`n = ${m.a5.n}`,cls(m.a5))+
+    tile("Correlação 3p",m.ic==null?"—":fmt(m.ic,2),`sentimento × retorno · n = ${m.nic}`,m.ic==null?"":m.ic>0.05?"up":m.ic<-0.05?"dn":"")+
+    tile("Positivas − negativas",m.spread==null?"—":pct(m.spread,2),"retorno anormal médio em 3p",m.spread==null?"":m.spread>0?"up":"dn");
+  const lista=N.itens.filter(x=>filtroN==="todas"||(filtroN==="pos"?x.score>=m.L:x.score<=-m.L)).slice(0,80);
+  const rc=(x,k)=>{ const r=x["r"+k]; if(r==null) return '<span class="mute">…</span>'; const sig=Math.abs(x.score)>=m.L; const hit=sig&&Math.sign(r)===Math.sign(x.score);
+    return `<span class="${r>=0?"up":"dn"}">${pct(r,1)}</span>${sig?` <span class="${hit?"ok":"ko"}" aria-label="${hit?"acertou":"errou"}">${hit?"✓":"✗"}</span>`:""}`; };
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  $("#nBody").innerHTML=lista.map(x=>{ const sc=x.score, ch=Math.abs(sc)<m.L?"n":sc>0?"u":"d";
+    const tit=x.link?`<a href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.titulo)}</a>`:esc(x.titulo);
+    return `<tr><td class="num">${x.sessao.slice(8,10)}/${x.sessao.slice(5,7)}</td><td><button type="button" class="tk" data-go="${x.t}">${x.t}</button></td>
+      <td><span class="chip ${ch}">${sc>0?"+":""}${fmt(sc,2)}</span></td><td>${tit}<span class="src">${esc(x.fonte)}</span></td>
+      <td class="r">${rc(x,1)}</td><td class="r">${rc(x,3)}</td><td class="r">${rc(x,5)}</td></tr>`; }).join("")||'<tr><td colspan="7" class="mute">Nada neste filtro.</td></tr>';
+  const fs=Object.entries(m.fontes).sort((a,b)=>b[1].n-a[1].n).slice(0,10);
+  $("#nFontes").innerHTML=fs.length?fs.map(([f,v])=>`<div><span>${esc(f)} <span class="mute num">${v.n}</span></span><span class="num ${v.ok/v.n>=0.55?"up":v.ok/v.n<0.5?"dn":""}">${fmt(100*v.ok/v.n,0)}%</span></div>`).join(""):'<p class="mute">Ainda sem sinais avaliados.</p>';
+  $("#nNota").innerHTML=(N.simulado?"<b>Notícias simuladas</b> para demonstrar a medição. ":"")+
+    `Sinal = notícia com |sentimento| ≥ ${fmt(m.L,2)}. Acerto = sinal do sentimento igual ao do retorno anormal (papel − BOVA11) a partir do fechamento anterior à sessão em que a notícia pôde agir; após as 17h conta o pregão seguinte. `+
+    (m.a3.n<30?`<b>Amostra pequena (${m.a3.n}):</b> não ajuste pesos ainda.`:"");
+}
+
 /* ===================== Eventos ===================== */
 function show(v){
   ST.view=v; document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.v===v));
@@ -601,13 +723,15 @@ function show(v){
 }
 document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>show(b.dataset.v));
 $("#segX").onclick=e=>{ const n=+e.target.dataset.n; if(!n) return; ST.win=n; $("#segX").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.n===n)); drawXray(); };
-document.addEventListener("click",e=>{ const c=e.target.closest(".card"); if(c){ ST.sel=c.dataset.t; fillSelect(); show("grafico"); } });
+document.addEventListener("click",e=>{ const g=e.target.closest("[data-go]"); if(g){ ST.sel=g.dataset.go; fillSelect(); show("grafico"); return; }
+  const c=e.target.closest(".card"); if(c){ ST.sel=c.dataset.t; fillSelect(); show("grafico"); } });
+$("#segN").onclick=e=>{ const f=e.target.dataset.f; if(!f) return; filtroN=f; $("#segN").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===f)); drawNews(); };
 $("#selT").onchange=e=>{ ST.sel=e.target.value; drawChart(); };
 $("#btnRefresh").onclick=()=>carregar();
 $("#btnReal").onclick=()=>{ store.del("rb3_modo"); carregar(); };
 $("#btnDemo").onclick=()=>{ store.set("rb3_modo","demo"); log("Modo simulado ativado."); carregar(); };
 let rt; window.addEventListener("resize",()=>{ clearTimeout(rt); rt=setTimeout(()=>ST.data&&draw(),150); });
 
-const h0=(location.hash||"").slice(1); if(["raiox","painel","rotacao","grafico","config"].includes(h0)) show(h0);
+const h0=(location.hash||"").slice(1); if(["raiox","painel","rotacao","grafico","noticias","config"].includes(h0)) show(h0);
 carregar();
 </script>

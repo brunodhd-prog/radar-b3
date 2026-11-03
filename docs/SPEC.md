@@ -36,3 +36,10 @@ Casos de borda: ticker inexistente/renomeado (pula e lista), 429 (espera e repet
 3. Intraday (plano pago brapi ou outra fonte) para o Raio-X ao vivo.
 4. Posições em aberto de opções/futuros (arquivos diários da B3) para o fluxo real.
 5. Hospedar no GitHub Pages + rotina agendada para pré-gerar dados.
+
+## v0.3 — Notícias (RF-07 a RF-09)
+- RF-07 Coletar manchetes por papel (Google Notícias RSS) de hora em hora; deduplicar por papel + título.
+- RF-08 Classificar com FinBERT-PT-BR (gratuito, na nuvem); registrar rótulo, score e confiança.
+- RF-09 Avaliar cada notícia contra o retorno anormal de 1/3/5 pregões, com corte das 17h, e mostrar acerto, correlação e acerto por fonte.
+- Fora da v0.3: redes sociais (API do X é paga; raspagem viola termos), fatos relevantes da CVM (dados abertos só atualizam semanalmente), ajuste automático de pesos.
+- Próximo: com ≥ 30 sinais por horizonte, testar o filtro "setup do Painel + notícia a favor" contra "setup sem notícia".
