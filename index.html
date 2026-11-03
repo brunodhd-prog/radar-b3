@@ -117,6 +117,16 @@ table.nt{width:100%;border-collapse:collapse;font-size:12.5px;min-width:640px}
 .nt .tk{font-family:var(--f-disp);font-weight:700;cursor:pointer;background:none;border:0;padding:0}
 .ok{color:var(--up)} .ko{color:var(--dn)}
 
+/* Backtest */
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
+table.bt{min-width:860px}
+#cvBT{height:300px}
+.tmgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+#cvTM{height:240px}
+.cfggrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px 14px}
+.risk{grid-column:1/-1;display:flex;justify-content:space-between;gap:8px;font-size:11.5px;border-top:1px dashed var(--line2);padding-top:6px;flex-wrap:wrap}
+.risk b{font-family:var(--f-data);font-weight:600}
+
 /* Config */
 .cfg{max-width:720px}
 .cfg label{display:block;font-size:12px;color:var(--mute);margin:10px 0 4px}
@@ -129,7 +139,7 @@ table.nt{width:100%;border-collapse:collapse;font-size:12.5px;min-width:640px}
 footer{margin-top:20px;color:var(--dim);font-size:11.5px;max-width:80ch}
 
 @media (max-width:860px){
-  .xray,.board,.rrg,.news{grid-template-columns:minmax(0,1fr)}
+  .xray,.board,.rrg,.news,.tmgrid{grid-template-columns:minmax(0,1fr)}
   #cvX{height:320px} #cvR{height:380px} #cvC{height:340px}
   .lv{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
@@ -138,6 +148,7 @@ footer{margin-top:20px;color:var(--dim);font-size:11.5px;max-width:80ch}
 
 <header class="top">
   <div class="brand"><h1>Radar <b>de</b> <i>Blocos</i> B3</h1><small>order blocks · fluxo · rotação</small></div>
+  <span class="seg" id="segM" role="group" aria-label="Mercado"><button data-m="b3" aria-pressed="true">B3</button><button data-m="cripto" aria-pressed="false">Cripto</button></span>
   <div class="status">
     <span id="pill" class="pill">carregando</span>
     <span id="upd" class="num mute" style="font-size:12px"></span>
@@ -150,6 +161,7 @@ footer{margin-top:20px;color:var(--dim);font-size:11.5px;max-width:80ch}
   <button role="tab" data-v="rotacao" aria-selected="false">Rotação</button>
   <button role="tab" data-v="grafico" aria-selected="false">Gráfico</button>
   <button role="tab" data-v="noticias" aria-selected="false">Notícias</button>
+  <button role="tab" data-v="backtest" aria-selected="false">Backtest</button>
   <button role="tab" data-v="config" aria-selected="false">Configurar</button>
 </nav>
 <div id="banner" class="banner" hidden></div>
@@ -171,7 +183,7 @@ footer{margin-top:20px;color:var(--dim);font-size:11.5px;max-width:80ch}
   </section>
 
   <section class="view rrg" id="v-rotacao" hidden>
-    <div class="box"><h2><span>Rotação setorial × BOVA11</span><span class="mute num" style="font-size:11px">rastro 8 pregões</span></h2><canvas id="cvR"></canvas></div>
+    <div class="box"><h2><span id="rrgTit">Rotação setorial × BOVA11</span><span class="mute num" style="font-size:11px">rastro 8 candles diários</span></h2><canvas id="cvR"></canvas></div>
     <div class="box"><h2><span>Quadrantes</span></h2><div class="legend" id="rrgLeg"></div></div>
   </section>
 
@@ -180,6 +192,21 @@ footer{margin-top:20px;color:var(--dim);font-size:11.5px;max-width:80ch}
       <div class="chartbar"><select id="selT" aria-label="Ação"></select><span id="cTitle" class="mute"></span></div>
       <canvas id="cvC"></canvas>
       <div class="facts" id="facts"></div>
+    </div>
+    <div class="box" id="tmBox"></div>
+  </section>
+
+  <section class="view" id="v-backtest" hidden>
+    <div class="box">
+      <h2><span>Estratégias · walk-forward</span>
+        <span class="seg" id="segH"><button data-h="5" aria-pressed="false">5p</button><button data-h="10" aria-pressed="true">10p</button><button data-h="20" aria-pressed="false">20p</button></span></h2>
+      <p class="mute num" id="btInfo" style="font-size:11.5px;margin:0 0 8px"></p>
+      <div class="tblwrap"><table class="nt bt"><thead><tr><th>Estratégia</th><th class="r">Operações</th><th class="r">Acerto</th><th class="r">Média</th><th class="r">Total</th><th class="r">Fator de lucro</th><th class="r">Queda máx.</th><th class="r">Alvo/Stop/Prazo</th><th>Veredito</th></tr></thead><tbody id="btBody"></tbody></table></div>
+    </div>
+    <div class="box"><h2><span>Curva acumulada em R</span><span class="mute num" style="font-size:11px">R = múltiplos do risco inicial</span></h2><canvas id="cvBT"></canvas></div>
+    <div class="box"><h2><span>Últimas operações simuladas</span></h2>
+      <div class="tblwrap"><table class="nt"><thead><tr><th>Entrada</th><th>Papel</th><th>Estratégia</th><th>Lado</th><th class="r">Preço</th><th class="r">Saída</th><th>Motivo</th><th class="r">Resultado</th></tr></thead><tbody id="btOps"></tbody></table></div>
+      <p class="mute" style="font-size:11.5px;margin:10px 0 0;max-width:90ch">Cada dia é analisado só com os candles disponíveis até aquele fechamento. A entrada é na abertura do pregão seguinte; se o candle toca stop e alvo, conta o stop. Sem custos de corretagem e sem escorregamento: o resultado real tende a ser pior. Com 3 meses de histórico diário, nenhuma estratégia chega a uma amostra conclusiva; use a base aleatória como régua.</p>
     </div>
   </section>
 
@@ -208,6 +235,16 @@ footer{margin-top:20px;color:var(--dim);font-size:11.5px;max-width:80ch}
         <button class="btn" id="btnDemo" type="button">Usar dados simulados</button>
       </div>
       <div class="log" id="log"></div>
+      <h2 style="margin-top:22px"><span>Risco e tamanho de posição</span></h2>
+      <div class="cfggrid">
+        <div><label for="cfg_capital">Capital (R$)</label><input id="cfg_capital" inputmode="decimal"></div>
+        <div><label for="cfg_riscoPct">Risco por operação (% do capital)</label><input id="cfg_riscoPct" inputmode="decimal"></div>
+        <div><label for="cfg_maxPosPct">Posição máxima (% do capital)</label><input id="cfg_maxPosPct" inputmode="decimal"></div>
+        <div><label for="cfg_rrMin">R:R mínimo (1:x)</label><input id="cfg_rrMin" inputmode="decimal"></div>
+        <div><label for="cfg_lote">Lote (1 = fracionário, 100 = padrão)</label><input id="cfg_lote" inputmode="numeric"></div>
+        <div><label for="cfg_pMin">Vantagem mínima na simulação (pontos)</label><input id="cfg_pMin" inputmode="decimal"></div>
+      </div>
+      <div class="row"><button class="btn primary" id="btnCfg" type="button">Salvar parâmetros</button><span id="cfgMsg" class="mute" style="align-self:center;font-size:12px"></span></div>
     </div>
   </section>
 </main>
@@ -281,7 +318,32 @@ DIRR3:Imobiliário:Direcional
 CURY3:Imobiliário:Cury construtora
 MULT3:Imobiliário:Multiplan
 ALOS3:Imobiliário:Allos shoppings`;
-const BENCH = "BOVA11";
+const UNIVERSO_CRIPTO = `BTC:Referência:Bitcoin
+ETH:Contratos inteligentes:Ethereum
+SOL:Contratos inteligentes:Solana
+ADA:Contratos inteligentes:Cardano
+AVAX:Contratos inteligentes:Avalanche
+DOT:Contratos inteligentes:Polkadot
+TRX:Contratos inteligentes:Tron
+NEAR:Contratos inteligentes:Near Protocol
+ATOM:Contratos inteligentes:Cosmos
+TON:Contratos inteligentes:Toncoin
+BNB:Exchanges:BNB Binance
+XRP:Pagamentos:XRP Ripple
+LTC:Pagamentos:Litecoin
+BCH:Pagamentos:Bitcoin Cash
+XLM:Pagamentos:Stellar
+LINK:DeFi:Chainlink
+UNI:DeFi:Uniswap
+AAVE:DeFi:Aave
+DOGE:Memes:Dogecoin
+SHIB:Memes:Shiba Inu`;
+const MERCADOS = {
+  b3:    {nome:"B3",    bench:"BOVA11", arq:"data/b3.json",     univ:()=>UNIVERSO_PADRAO, diasUteis:true,  vol:1,   unid:"pregões", ativo:"papel"},
+  cripto:{nome:"Cripto",bench:"BTC",    arq:"data/cripto.json", univ:()=>UNIVERSO_CRIPTO, diasUteis:false, vol:2.4, unid:"dias",    ativo:"moeda"}
+};
+let MERCADO = (()=>{ try{ return localStorage.getItem("rb3_mercado")==="cripto"?"cripto":"b3"; }catch(e){ return "b3"; } })();
+const MK = () => MERCADOS[MERCADO];
 
 /* ===================== Utilidades ===================== */
 const $ = s => document.querySelector(s);
@@ -290,7 +352,9 @@ const store = {
   set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
   del(k){ try{ localStorage.removeItem(k); }catch(e){} }
 };
-const fmt = (x,d=2) => (x==null||!isFinite(x)) ? "—" : x.toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmt = (x,d=2) => (x==null||!isFinite(x)) ? "—" : (d>=2 && x!==0 && Math.abs(x)<0.01)
+  ? x.toLocaleString("pt-BR",{minimumSignificantDigits:2,maximumSignificantDigits:4})
+  : x.toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d});
 const pct = (x,d=2) => (x==null||!isFinite(x)) ? "—" : (x>0?"+":"")+fmt(x*100,d)+"%";
 const mean = a => a.length ? a.reduce((s,x)=>s+x,0)/a.length : 0;
 const std = a => { const m=mean(a); return Math.sqrt(mean(a.map(x=>(x-m)**2)))||1; };
@@ -298,7 +362,7 @@ const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).
 function parseUniverso(txt){
   const out=[], seen=new Set();
   for(const ln of txt.split(/\r?\n/)){
-    const m = ln.trim().match(/^([A-Za-z0-9]{4,7})\s*[:;,\t]\s*(.+)$/);
+    const m = ln.trim().match(/^([A-Za-z0-9]{2,7})\s*[:;,\t]\s*(.+)$/);
     if(!m) continue;
     const t=m[1].toUpperCase(); if(seen.has(t)) continue; seen.add(t);
     const [setor,nome]=m[2].split(":").map(x=>x.trim());
@@ -415,10 +479,11 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a
 function gerarDemo(univ, seed=20261103){
   const R=mulberry32(seed), N=()=>{let u=0,v=0;while(!u)u=R();while(!v)v=R();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
   const dias=[]; const d=new Date(); d.setHours(0,0,0,0);
-  while(dias.length<65){ if(d.getDay()%6!==0) dias.unshift(d.getTime()/1000); d.setDate(d.getDate()-1); }
+  const M=MK(), nd=M.diasUteis?65:90;
+  while(dias.length<nd){ if(!M.diasUteis||d.getDay()%6!==0) dias.unshift(d.getTime()/1000); d.setDate(d.getDate()-1); }
   const setores=[...new Set(univ.map(u=>u.setor))];
-  const mkt=dias.map(()=>0.0003+0.009*N());
-  const sec={}; setores.forEach(s=>{ const drift=(R()-0.5)*0.004; sec[s]=dias.map((_,i)=>drift*(i>40?1.8:0.5)+0.006*N()); });
+  const V=M.vol, mkt=dias.map(()=>0.0003+0.009*V*N());
+  const sec={}; setores.forEach(s=>{ const drift=(R()-0.5)*0.004; sec[s]=dias.map((_,i)=>drift*(i>40?1.8:0.5)+0.006*V*N()); });
   const mk=(t,setor,rets,base)=>{
     let c=base; const bars=[];
     for(let i=0;i<dias.length;i++){
@@ -428,27 +493,29 @@ function gerarDemo(univ, seed=20261103){
     }
     return {t,nome:t,setor,bars};
   };
-  const stocks=univ.map(u=>{
+  const stocks=univ.filter(u=>u.t!==M.bench).map(u=>{
     const beta=0.6+R()*0.9;
-    const rets=dias.map((_,i)=>beta*mkt[i]+sec[u.setor][i]+0.012*N()+(R()<0.035?(R()<0.5?-1:1)*0.045:0));
-    return mk(u.t,u.setor,rets,8+R()*70);
+    const rets=dias.map((_,i)=>beta*mkt[i]+sec[u.setor][i]+0.012*V*N()+(R()<0.035?(R()<0.5?-1:1)*0.045*V:0));
+    const base=M.diasUteis?8+R()*70:10**(R()*8-4);   /* cripto: de frações de centavo a dezenas de milhares */
+    return mk(u.t,u.setor,rets,base);
   });
-  const bench=mk(BENCH,"Índice",mkt,120);
+  const bench=mk(M.bench,"Referência",mkt,M.diasUteis?120:350000);
   return {stocks,bench,fonte:"demo",ts:Date.now(),falhas:[]};
 }
 
 /* ===================== Dados reais (gerados na nuvem, sem chave no navegador) ===================== */
 async function carregarArquivo(){
-  const r=await fetch("data/b3.json?t="+Math.floor(Date.now()/60e3),{cache:"no-store"});
-  if(!r.ok) throw new Error(r.status===404?"data/b3.json ainda não foi gerado":"HTTP "+r.status);
+  const arq=MK().arq;
+  const r=await fetch(arq+"?t="+Math.floor(Date.now()/60e3),{cache:"no-store"});
+  if(!r.ok) throw new Error(r.status===404?arq+" ainda não foi gerado":"HTTP "+r.status);
   const d=await r.json();
-  if(!d||!d.bench||!Array.isArray(d.stocks)) throw new Error("data/b3.json em formato inesperado");
+  if(!d||!d.bench||!Array.isArray(d.stocks)) throw new Error(MK().arq+" em formato inesperado");
   d.falhas=d.falhas||[]; d.renomes=d.renomes||[]; return d;
 }
 
 /* ===================== Estado ===================== */
 const ST={data:null,an:[],win:20,sel:null,view:"raiox"};
-function universo(){ return parseUniverso(UNIVERSO_PADRAO); }
+function universo(){ return parseUniverso(MK().univ()); }
 function setStatus(){
   const p=$("#pill"), ban=$("#banner");
   if(!ST.data){ p.textContent="sem dados"; p.className="pill"; return; }
@@ -492,6 +559,7 @@ function draw(){
   if(ST.view==="rotacao") drawRRG();
   if(ST.view==="grafico") drawChart();
   if(ST.view==="noticias") drawNews();
+  if(ST.view==="backtest") drawBacktest();
 }
 function canvas(cv){
   const r=cv.getBoundingClientRect(), d=window.devicePixelRatio||1;
@@ -506,7 +574,7 @@ function drawXray(){
   const paths=ST.data.stocks.filter(s=>s.bars.length>N).map(s=>{ const b=s.bars.slice(-(N+1)); return {t:s.t,p:b.map(x=>x.c/b[0].c-1)}; });
   const up=paths.filter(p=>p.p[N]>=0).length, dn=paths.length-up;
   $("#nUp").textContent=up+" ↑"; $("#nDn").textContent="↓ "+dn; $("#bUp").style.width=(paths.length?100*up/paths.length:0)+"%";
-  $("#xWin").textContent=N+" pregões";
+  $("#xWin").textContent=N+" "+MK().unid;
   const {g,w,h}=canvas($("#cvX"));
   const all=paths.flatMap(p=>p.p); let lo=Math.min(0,...all), hi=Math.max(0,...all); const pad=(hi-lo)*0.06; lo-=pad; hi+=pad;
   const L=8,R=56,T=8,B=20, X=i=>L+(w-L-R)*i/N, Y=v=>T+(h-T-B)*(hi-v)/(hi-lo||1);
@@ -550,7 +618,7 @@ function card(a,lado){
       <div><span>Stop</span><b>${fmt(s.stop)}</b></div>
       <div><span>Alvo</span><b>${fmt(s.alvo)}</b></div>
       <div><span>ATR</span><b>${fmt(a.a)}</b></div>
-    </div></button>`;
+    </div>${linhaRisco(a,lado)}</button>`;
 }
 function drawBoard(){
   const srt=[...ST.an].sort((a,b)=>b.score-a.score);
@@ -628,6 +696,7 @@ function drawChart(){
   const f=[["Fechamento","R$ "+fmt(a.c)],["Dia",pct(a.r1)],["5 pregões",pct(a.r5)],["20 pregões",pct(a.r20)],["Volume rel.",fmt(a.vr,2)+"×"],["Fluxo",a.fluxo],
     ["OB alta ativo",a.obUp?fmt(a.obUp.bot)+"–"+fmt(a.obUp.top):"—"],["OB baixa ativo",a.obDn?fmt(a.obDn.bot)+"–"+fmt(a.obDn.top):"—"],["Score",fmt(a.score,2)]];
   $("#facts").innerHTML=f.map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join("");
+  drawTM(a);
 }
 
 /* ===================== Notícias ===================== */
@@ -637,6 +706,7 @@ async function carregarNoticias(){
     const r=await fetch("data/noticias.json?t="+Math.floor(Date.now()/60e3),{cache:"no-store"});
     if(!r.ok) throw new Error(r.status===404?"data/noticias.json ainda não foi gerado":"HTTP "+r.status);
     const d=await r.json(); if(!d||!Array.isArray(d.itens)) throw new Error("formato inesperado");
+    const meus=new Set(ST.data.stocks.map(s=>s.t)); d.itens=d.itens.filter(x=>meus.has(x.t));
     d.simulado=false; ST.news=d;
   }catch(e){ ST.news={itens:[],erro:e.message,limiar:0.3,simulado:false}; }
 }
@@ -710,8 +780,227 @@ function drawNews(){
   const fs=Object.entries(m.fontes).sort((a,b)=>b[1].n-a[1].n).slice(0,10);
   $("#nFontes").innerHTML=fs.length?fs.map(([f,v])=>`<div><span>${esc(f)} <span class="mute num">${v.n}</span></span><span class="num ${v.ok/v.n>=0.55?"up":v.ok/v.n<0.5?"dn":""}">${fmt(100*v.ok/v.n,0)}%</span></div>`).join(""):'<p class="mute">Ainda sem sinais avaliados.</p>';
   $("#nNota").innerHTML=(N.simulado?"<b>Notícias simuladas</b> para demonstrar a medição. ":"")+
-    `Sinal = notícia com |sentimento| ≥ ${fmt(m.L,2)}. Acerto = sinal do sentimento igual ao do retorno anormal (papel − BOVA11) a partir do fechamento anterior à sessão em que a notícia pôde agir; após as 17h conta o pregão seguinte. `+
+    `Sinal = notícia com |sentimento| ≥ ${fmt(m.L,2)}. Acerto = sinal do sentimento igual ao do retorno anormal (${MK().ativo} − ${MK().bench}) a partir do fechamento anterior à sessão em que a notícia pôde agir; após as 17h conta o pregão seguinte. `+
     (m.a3.n<30?`<b>Amostra pequena (${m.a3.n}):</b> não ajuste pesos ainda.`:"");
+}
+
+/* ===================== Backtest, Time Machine, posição e risco ===================== */
+const ESTRATEGIAS = [
+  {id:"painel",   nome:"Painel (score)",          desc:"5 maiores scores em alta compram, 5 menores em baixa vendem; stop e alvo do plano do cartão."},
+  {id:"repique",  nome:"Repique no OB de alta",   desc:"Compra quando o preço está até 1 ATR acima de um order block de alta ativo, em tendência de alta."},
+  {id:"rejeicao", nome:"Rejeição no OB de baixa", desc:"Vende quando o preço está até 1 ATR abaixo de um order block de baixa ativo, em tendência de baixa."},
+  {id:"rompe",    nome:"Rompimento com volume",   desc:"Compra o fechamento acima da máxima de 20 pregões com volume 1,5× a média; stop 1,2 ATR, alvo 2,4 ATR."},
+  {id:"base",     nome:"Base aleatória",          desc:"Compras sorteadas (8% dos dias) com stop 1 ATR e alvo 1,5 ATR. Serve de régua: estratégia que não bate a base não tem vantagem."}
+];
+
+/* Simula uma operação: entrada na ABERTURA do pregão i0 (sinal no fechamento de i0-1), stop testado antes do alvo. */
+function simularOperacao(bars, i0, dir, stop, alvo, H){
+  if(i0>=bars.length) return null;
+  const e=bars[i0].o, risco=dir>0? e-stop : stop-e;
+  if(!(risco>0)) return null;                                   // abriu além do stop: setup anulado
+  if(dir>0 ? e>=alvo : e<=alvo) return null;                    // abriu além do alvo: perdeu a entrada
+  const fim=i0+H-1;
+  for(let j=i0;j<=Math.min(fim,bars.length-1);j++){
+    const b=bars[j];
+    if(dir>0){
+      if(b.l<=stop){ const x=j>i0?Math.min(b.o,stop):stop; return {i0,j,e,x,saida:"stop",R:(x-e)/risco}; }
+      if(b.h>=alvo){ const x=j>i0?Math.max(b.o,alvo):alvo; return {i0,j,e,x,saida:"alvo",R:(x-e)/risco}; }
+    }else{
+      if(b.h>=stop){ const x=j>i0?Math.max(b.o,stop):stop; return {i0,j,e,x,saida:"stop",R:(e-x)/risco}; }
+      if(b.l<=alvo){ const x=j>i0?Math.min(b.o,alvo):alvo; return {i0,j,e,x,saida:"alvo",R:(e-x)/risco}; }
+    }
+  }
+  if(fim>bars.length-1) return {i0,j:bars.length-1,e,saida:"aberta"};   // ainda em andamento: fora das métricas
+  const x=bars[fim].c; return {i0,j:fim,e,x,saida:"prazo",R:dir>0?(x-e)/risco:(e-x)/risco};
+}
+
+/* Walk-forward: no dia k cada papel é analisado só com candles até k. */
+function rodarBacktest(data, H=10){
+  const dias=data.bench.bars.map(b=>b.d), R=mulberry32(19), ops=[];
+  const idx=new Map(data.stocks.map(s=>[s.t,new Map(s.bars.map((b,i)=>[b.d,i]))]));
+  const aberto={};                                              // estratégia|papel -> índice do último pregão da operação
+  for(let k=30;k<dias.length-1;k++){
+    const lista=[];
+    for(const s of data.stocks){ const i=idx.get(s.t).get(dias[k]); if(i==null||i<25) continue;
+      const a=analisar({...s,bars:s.bars.slice(0,i+1)}); a._i=i; a._s=s; lista.push(a); }
+    if(lista.length<5) continue;
+    pontuar(lista);
+    const srt=[...lista].sort((x,y)=>y.score-x.score);
+    const sinais=[];
+    srt.filter(a=>a.tend>0&&a.score>0).slice(0,5).forEach(a=>sinais.push(["painel",a,1,a.long.stop,a.long.alvo]));
+    srt.filter(a=>a.tend<0&&a.score<0).reverse().slice(0,5).forEach(a=>sinais.push(["painel",a,-1,a.short.stop,a.short.alvo]));
+    for(const a of lista){
+      const b=a._s.bars, i=a._i;
+      if(a.obUp&&a.tend>0&&a.c-a.obUp.top<=a.a&&a.c>=a.obUp.bot){ const st=a.obUp.bot-0.25*a.a; sinais.push(["repique",a,1,st,Math.max(a.resist,a.c+1.5*(a.c-st))]); }
+      if(a.obDn&&a.tend<0&&a.obDn.bot-a.c<=a.a&&a.c<=a.obDn.top){ const st=a.obDn.top+0.25*a.a; sinais.push(["rejeicao",a,-1,st,Math.min(a.suporte,a.c-1.5*(st-a.c))]); }
+      const max20=Math.max(...b.slice(Math.max(0,i-20),i).map(x=>x.h));
+      if(a.c>max20&&a.vr>1.5) sinais.push(["rompe",a,1,a.c-1.2*a.a,a.c+2.4*a.a]);
+      if(R()<0.08) sinais.push(["base",a,1,a.c-a.a,a.c+1.5*a.a]);
+    }
+    for(const [est,a,dir,stop,alvo] of sinais){
+      const chave=est+"|"+a.t; if(aberto[chave]!=null && aberto[chave]>=a._i+1) continue;
+      const op=simularOperacao(a._s.bars,a._i+1,dir,stop,alvo,H); if(!op) continue;
+      aberto[chave]=op.j;
+      ops.push({est,t:a.t,dir,stop,alvo,rrPlano:dir>0?(alvo-a.c)/(a.c-stop):(a.c-alvo)/(stop-a.c),
+        dSinal:dias[k],dEnt:a._s.bars[op.i0].d,dSai:a._s.bars[op.j].d,...op});
+    }
+  }
+  return {H,ops,res:ESTRATEGIAS.map(e=>metricasEstrategia(e,ops.filter(o=>o.est===e.id)))};
+}
+
+function metricasEstrategia(e,ops){
+  const f=ops.filter(o=>o.saida!=="aberta"), n=f.length, Rs=f.map(o=>o.R);
+  const alvo=f.filter(o=>o.saida==="alvo").length, stop=f.filter(o=>o.saida==="stop").length;
+  const ganhos=Rs.filter(r=>r>0).reduce((a,b)=>a+b,0), perdas=-Rs.filter(r=>r<0).reduce((a,b)=>a+b,0);
+  const curva=[]; let acc=0, pico=0, dd=0;
+  for(const o of [...f].sort((a,b)=>a.dSai-b.dSai)){ acc+=o.R; pico=Math.max(pico,acc); dd=Math.max(dd,pico-acc); curva.push({d:o.dSai,v:acc}); }
+  const rrMed=n?mean(f.map(o=>o.rrPlano).filter(isFinite)):1;
+  return {...e,n,abertas:ops.length-n,acerto:n?Rs.filter(r=>r>0).length/n:null,expect:n?mean(Rs):null,totalR:acc,pf:perdas?ganhos/perdas:null,dd,
+    alvo,stop,prazo:n-alvo-stop,rrMed,curva,veredito:veredito(alvo,stop,rrMed,n,n?mean(Rs):0)};
+}
+
+/* Mesmo critério do Time Machine original: fatia do alvo entre as operações que bateram alvo ou stop × ponto de equilíbrio 1/(1+R). */
+function veredito(alvo,stop,rr,n,expect){
+  if(n<20) return {txt:`Amostra pequena (${n})`,cls:"n"};
+  const lados=alvo+stop; if(!lados) return {txt:"Sem alvo nem stop",cls:"n"};
+  const gap=(alvo/lados-1/(1+Math.max(rr,0.1)))*100;
+  let txt=Math.abs(gap)<5?"Próximo do equilíbrio":gap>0?(gap>=15?"Forte a favor":"Inclina a favor"):(gap<=-15?"Forte contra":"Inclina contra");
+  return {txt,cls:Math.abs(gap)<5?"n":gap>0?"u":"d",gap,expect};
+}
+
+/* Time Machine diária: sorteia candles do próprio papel (razões à véspera) por H pregões, 10.000 vezes. */
+function timeMachine(bars,dir,ent,stop,alvo,H=10,N=10000,seed=19){
+  const hist=bars.slice(-61), pool=[];
+  for(let i=1;i<hist.length;i++){ const p=hist[i-1].c; pool.push([hist[i].o/p,hist[i].h/p,hist[i].l/p,hist[i].c/p]); }
+  const R=mulberry32(seed), out={alvo:0,stop:0,nenhum:0,Rs:[],fan:[]}; const risco=dir>0?ent-stop:stop-ent;
+  if(!(risco>0)||pool.length<20) return null;
+  const nFan=Math.min(N,2000), fan=Array.from({length:H+1},()=>[]);
+  for(let k=0;k<N;k++){
+    let c=ent, fim=null;
+    if(k<nFan) fan[0].push(c);
+    for(let s=1;s<=H;s++){
+      const [o,h,l,cl]=pool[Math.floor(R()*pool.length)], O=c*o,Hh=c*h,L=c*l,C=c*cl;
+      if(fim==null){
+        if(dir>0){ if(L<=stop) fim=["stop",(Math.min(O,stop)-ent)/risco]; else if(Hh>=alvo) fim=["alvo",(Math.max(O,alvo)-ent)/risco]; }
+        else     { if(Hh>=stop) fim=["stop",(ent-Math.max(O,stop))/risco]; else if(L<=alvo) fim=["alvo",(ent-Math.min(O,alvo))/risco]; }
+      }
+      c=C; if(k<nFan) fan[s].push(c);
+    }
+    if(fim){ out[fim[0]]++; out.Rs.push(fim[1]); } else { out.nenhum++; out.Rs.push(dir>0?(c-ent)/risco:(ent-c)/risco); }
+  }
+  const q=(a,p)=>{ const s=[...a].sort((x,y)=>x-y); return s[Math.min(s.length-1,Math.floor(p*s.length))]; };
+  out.fan=fan.map(a=>({p5:q(a,.05),p25:q(a,.25),p50:q(a,.5),p75:q(a,.75),p95:q(a,.95)}));
+  out.N=N; out.H=H; out.expect=mean(out.Rs); out.rr=dir>0?(alvo-ent)/risco:(ent-alvo)/risco;
+  out.veredito=veredito(out.alvo,out.stop,out.rr,N,out.expect);
+  return out;
+}
+
+/* Parâmetros de risco do usuário (preferência local deste navegador). */
+const CFG_PADRAO={capital:10000,riscoPct:1,lote:1,rrMin:1.5,maxPosPct:30,pMin:0};
+function cfg(){ try{ return {...CFG_PADRAO,...JSON.parse(store.get("rb3_cfg")||"{}")}; }catch(e){ return {...CFG_PADRAO}; } }
+function dimensionar(plano,dir,c=cfg()){
+  const risco=dir>0?plano.ent-plano.stop:plano.stop-plano.ent;
+  if(!(risco>0)) return {qtd:0,valor:0,perda:0,risco};
+  const lote=MERCADO==="cripto"?0:c.lote;   /* cripto é fracionária: sem lote */
+  const arred=q=>lote?Math.floor(q/lote)*lote:Math.floor(q*1e8)/1e8;
+  let qtd=arred(c.capital*c.riscoPct/100/risco);
+  const maxQ=arred(c.capital*c.maxPosPct/100/plano.ent); const limitada=qtd>maxQ; qtd=Math.max(0,Math.min(qtd,maxQ));
+  return {qtd,valor:qtd*plano.ent,perda:qtd*risco,risco,limitada};
+}
+function checarRisco(plano,dir,tm,c=cfg()){
+  const motivos=[], d=dimensionar(plano,dir,c);
+  if(!(plano.rr>=c.rrMin)) motivos.push(`R:R 1:${fmt(plano.rr,1)} abaixo do mínimo 1:${fmt(c.rrMin,1)}`);
+  if(d.qtd<=0) motivos.push(d.risco>0?"stop largo demais para o risco por operação":"stop do lado errado da entrada");
+  if(tm&&tm.veredito.gap!=null&&tm.veredito.gap<c.pMin) motivos.push(`simulação ${tm.veredito.txt.toLowerCase()}`);
+  return {ok:!motivos.length,motivos,d};
+}
+
+/* ---------- render: aba Backtest ---------- */
+let BT=null, BT_H=10;
+function drawBacktest(){
+  if(!BT||BT.H!==BT_H||BT.src!==ST.data){ $("#btBody").innerHTML='<tr><td colspan="9" class="mute">Calculando…</td></tr>';
+    setTimeout(()=>{ BT=rodarBacktest(ST.data,BT_H); BT.src=ST.data; drawBacktest(); },20); return; }
+  const dias=ST.data.bench.bars, d0=new Date(dias[30].d*1000).toLocaleDateString("pt-BR"), d1=new Date(dias.at(-1).d*1000).toLocaleDateString("pt-BR");
+  $("#btInfo").textContent=`${d0} a ${d1} · ${ST.data.stocks.length} papéis · prazo máx. ${BT_H} pregões`;
+  const cores={painel:css("--accent"),repique:css("--up"),rejeicao:css("--dn"),rompe:css("--warn"),base:css("--dim")};
+  $("#btBody").innerHTML=BT.res.map(r=>`<tr>
+    <td><span class="dot" style="background:${cores[r.id]}"></span><b>${r.nome}</b><span class="src">${r.desc}</span></td>
+    <td class="r">${r.n}${r.abertas?`<span class="src">+${r.abertas} abertas</span>`:""}</td>
+    <td class="r">${r.acerto==null?"—":fmt(r.acerto*100,0)+"%"}</td>
+    <td class="r ${r.expect>0?"up":r.expect<0?"dn":""}">${r.expect==null?"—":(r.expect>0?"+":"")+fmt(r.expect,2)+" R"}</td>
+    <td class="r ${r.totalR>0?"up":r.totalR<0?"dn":""}">${(r.totalR>0?"+":"")+fmt(r.totalR,1)} R</td>
+    <td class="r">${r.pf==null?"—":fmt(r.pf,2)}</td>
+    <td class="r">${fmt(r.dd,1)} R</td>
+    <td class="r">${r.alvo}/${r.stop}/${r.prazo}</td>
+    <td><span class="chip ${r.veredito.cls}">${r.veredito.txt}</span></td></tr>`).join("");
+  // curvas de capital em R
+  const {g,w,h}=canvas($("#cvBT")); const todas=BT.res.flatMap(r=>r.curva.map(p=>p.v)).concat([0]);
+  const lo=Math.min(...todas), hi=Math.max(...todas), t0=dias[30].d, t1=dias.at(-1).d;
+  const L=8,Rm=48,T=10,B=22, X=d=>L+(w-L-Rm)*(d-t0)/((t1-t0)||1), Y=v=>T+(h-T-B)*(hi-v)/((hi-lo)||1);
+  g.font="11px "+css("--f-data");
+  for(const t of niceTicks(lo,hi,5)){ g.strokeStyle=css("--line"); g.beginPath(); g.moveTo(L,Y(t)); g.lineTo(w-Rm,Y(t)); g.stroke(); g.fillStyle=css("--mute"); g.fillText((t>0?"+":"")+fmt(t,0)+" R",w-Rm+6,Y(t)+4); }
+  g.strokeStyle=css("--mute"); g.beginPath(); g.moveTo(L,Y(0)); g.lineTo(w-Rm,Y(0)); g.stroke();
+  for(const r of BT.res){ if(!r.curva.length) continue; g.strokeStyle=cores[r.id]; g.lineWidth=r.id==="base"?1.2:1.8; g.setLineDash(r.id==="base"?[4,4]:[]);
+    g.beginPath(); g.moveTo(X(t0),Y(0)); r.curva.forEach(p=>g.lineTo(X(p.d),Y(p.v))); g.stroke(); }
+  g.setLineDash([]); g.fillStyle=css("--mute"); const dl=d=>new Date(d*1000).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+  g.fillText(dl(t0),L,h-5); const s=dl(t1); g.fillText(s,w-Rm-g.measureText(s).width,h-5);
+  // últimas operações
+  const ult=[...BT.ops].filter(o=>o.est!=="base").sort((a,b)=>b.dEnt-a.dEnt).slice(0,40), nm=Object.fromEntries(ESTRATEGIAS.map(e=>[e.id,e.nome]));
+  $("#btOps").innerHTML=ult.map(o=>`<tr><td class="num">${new Date(o.dEnt*1000).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}</td>
+    <td><button type="button" class="tk" data-go="${o.t}">${o.t}</button></td><td>${nm[o.est]}</td><td><span class="chip ${o.dir>0?"u":"d"}">${o.dir>0?"compra":"venda"}</span></td>
+    <td class="r">${fmt(o.e)}</td><td class="r">${o.saida==="aberta"?"—":fmt(o.x)}</td><td>${o.saida}</td>
+    <td class="r ${o.R>0?"up":o.R<0?"dn":""}">${o.R==null?"…":(o.R>0?"+":"")+fmt(o.R,2)+" R"}</td></tr>`).join("");
+}
+
+/* ---------- render: painel Time Machine no Gráfico ---------- */
+function drawTM(a){
+  const dir=a.tend>0?1:-1, p=dir>0?a.long:a.short, s=ST.data.stocks.find(x=>x.t===a.t);
+  const tm=timeMachine(s.bars,dir,p.ent,p.stop,p.alvo,10);
+  const box=$("#tmBox");
+  if(!tm){ box.innerHTML='<p class="mute">Histórico insuficiente para simular este papel.</p>'; return; }
+  const ck=checarRisco({...p,rr:tm.rr},dir,tm), d=ck.d;
+  const hist=(BT&&BT.src===ST.data)?BT.ops.filter(o=>o.t===a.t&&o.saida!=="aberta"&&o.est!=="base"):null;
+  box.innerHTML=`<h2><span>Time Machine · ${dir>0?"compra":"venda"} a R$ ${fmt(p.ent)}${Math.abs(p.ent-a.c)>1e-12?" (entrada do plano)":""} · stop ${fmt(p.stop)} · alvo ${fmt(p.alvo)}</span><span class="chip ${tm.veredito.cls}">${tm.veredito.txt}</span></h2>
+   <div class="tmgrid"><canvas id="cvTM"></canvas><div class="facts" style="margin-top:0">
+    <div><span>Alvo primeiro</span><b class="up">${fmt(100*tm.alvo/tm.N,1)}%</b></div>
+    <div><span>Stop primeiro</span><b class="dn">${fmt(100*tm.stop/tm.N,1)}%</b></div>
+    <div><span>Nenhum em 10 ${MK().unid}</span><b>${fmt(100*tm.nenhum/tm.N,1)}%</b></div>
+    <div><span>R médio</span><b class="${tm.expect>=0?"up":"dn"}">${tm.expect>0?"+":""}${fmt(tm.expect,2)}</b></div>
+    <div><span>Equilíbrio no R:R 1:${fmt(tm.rr,1)}</span><b>${fmt(100/(1+tm.rr),0)}% de alvos</b></div>
+    <div><span>Histórico deste papel</span><b>${hist==null?"abra Backtest":hist.length?`${hist.filter(o=>o.R>0).length}/${hist.length} ganhos`:"sem sinais"}</b></div>
+    <div><span>Quantidade</span><b>${fmtQtd(d.qtd)}${d.limitada?" (teto)":""}</b></div>
+    <div><span>Valor · perda no stop</span><b>R$ ${fmt(d.valor,0)} · R$ ${fmt(d.perda,0)}</b></div>
+    <div><span>Risco</span><b class="${ck.ok?"up":"dn"}">${ck.ok?"APROVADO":"BLOQUEADO"}</b></div>
+   </div></div>
+   ${ck.ok?"":`<p class="dn" style="font-size:12px;margin:8px 0 0">${ck.motivos.join(" · ")}</p>`}
+   <p class="mute" style="font-size:11.5px;margin:8px 0 0;max-width:80ch">${tm.N.toLocaleString("pt-BR")} caminhos de 10 ${MK().unid} sorteando candles diários do próprio ${MK().ativo} nos últimos 60 ${MK().unid} (semente 19, repetível). Stop testado antes do alvo no mesmo candle. É simulação a partir do passado recente, não previsão: resultado, notícia ou leilão podem fazer o que esses 60 pregões nunca fizeram.</p>`;
+  const {g,w,h}=canvas($("#cvTM")), f=tm.fan, all=f.flatMap(x=>[x.p5,x.p95]).concat([p.stop,p.alvo]);
+  g.font="600 10px "+css("--f-data");
+  const Rm=Math.max(56,...[["alvo",p.alvo],["stop",p.stop],["entrada",p.ent]].map(([l,v])=>g.measureText(l+" "+fmt(v)).width+10));
+  const lo=Math.min(...all), hi=Math.max(...all), L=6,T=8,B=18, X=i=>L+(w-L-Rm)*i/(f.length-1), Y=v=>T+(h-T-B)*(hi-v)/((hi-lo)||1);
+  const banda=(a,b,al)=>{ g.beginPath(); f.forEach((x,i)=>i?g.lineTo(X(i),Y(x[a])):g.moveTo(X(i),Y(x[a]))); for(let i=f.length-1;i>=0;i--) g.lineTo(X(i),Y(f[i][b])); g.closePath(); g.globalAlpha=al; g.fillStyle=css("--accent"); g.fill(); g.globalAlpha=1; };
+  banda("p5","p95",.12); banda("p25","p75",.22);
+  g.strokeStyle=css("--accent"); g.lineWidth=1.6; g.beginPath(); f.forEach((x,i)=>i?g.lineTo(X(i),Y(x.p50)):g.moveTo(X(i),Y(x.p50))); g.stroke();
+  g.font="600 10px "+css("--f-data");
+  [[p.alvo,css("--up"),"alvo"],[p.stop,css("--dn"),"stop"],[p.ent,css("--mute"),"entrada"]].forEach(([v,c,l])=>{ g.setLineDash([5,4]); g.strokeStyle=c; g.beginPath(); g.moveTo(L,Y(v)); g.lineTo(w-Rm,Y(v)); g.stroke(); g.setLineDash([]); g.fillStyle=c; g.fillText(l+" "+fmt(v),w-Rm+4,Y(v)+3); });
+  g.fillStyle=css("--mute"); g.font="11px "+css("--f-data"); g.fillText("hoje",L,h-4); const fimTxt="+10 "+MK().unid; g.fillText(fimTxt,w-Rm-g.measureText(fimTxt).width,h-4);
+}
+
+/* ---------- Configurar: parâmetros de risco ---------- */
+function preencherCfg(){ const c=cfg(); for(const k of Object.keys(CFG_PADRAO)){ const el=$("#cfg_"+k); if(el) el.value=c[k]; } }
+function salvarCfg(){
+  const c={}; for(const k of Object.keys(CFG_PADRAO)){ const v=parseFloat(String($("#cfg_"+k).value).replace(",",".")); c[k]=isFinite(v)?v:CFG_PADRAO[k]; }
+  c.lote=c.lote>=100?100:1; c.capital=Math.max(0,c.capital); c.riscoPct=Math.min(Math.max(c.riscoPct,0.05),10);
+  store.set("rb3_cfg",JSON.stringify(c)); preencherCfg(); $("#cfgMsg").textContent="Parâmetros salvos neste navegador.";
+}
+
+function fmtQtd(q){ return MERCADO==="cripto" ? q.toLocaleString("pt-BR",{maximumSignificantDigits:6})+" un." : q.toLocaleString("pt-BR")+" ações"; }
+function linhaRisco(a,lado){
+  const dir=lado==="bull"?1:-1, p=dir>0?a.long:a.short, s=ST.data.stocks.find(x=>x.t===a.t);
+  const tm=timeMachine(s.bars,dir,p.ent,p.stop,p.alvo,10,2000);
+  const ck=checarRisco({...p,rr:tm?tm.rr:p.rr},dir,tm);
+  return `<div class="risk"><span>${fmtQtd(ck.d.qtd)} · R$ ${fmt(ck.d.valor,0)} · perda no stop R$ ${fmt(ck.d.perda,0)}</span>
+    <span>${tm?`sim. alvo ${fmt(100*tm.alvo/tm.N,0)}% · `:""}<b class="${ck.ok?"up":"dn"}" title="${ck.motivos.join(" · ")}">${ck.ok?"APROVADO":"BLOQUEADO"}</b></span></div>`;
 }
 
 /* ===================== Eventos ===================== */
@@ -725,13 +1014,23 @@ document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>show(b.dat
 $("#segX").onclick=e=>{ const n=+e.target.dataset.n; if(!n) return; ST.win=n; $("#segX").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.n===n)); drawXray(); };
 document.addEventListener("click",e=>{ const g=e.target.closest("[data-go]"); if(g){ ST.sel=g.dataset.go; fillSelect(); show("grafico"); return; }
   const c=e.target.closest(".card"); if(c){ ST.sel=c.dataset.t; fillSelect(); show("grafico"); } });
+$("#segH").onclick=e=>{ const h=+e.target.dataset.h; if(!h) return; BT_H=h; $("#segH").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.h===h)); drawBacktest(); };
+$("#btnCfg").onclick=()=>{ salvarCfg(); if(ST.data) draw(); };
+preencherCfg();
 $("#segN").onclick=e=>{ const f=e.target.dataset.f; if(!f) return; filtroN=f; $("#segN").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===f)); drawNews(); };
 $("#selT").onchange=e=>{ ST.sel=e.target.value; drawChart(); };
 $("#btnRefresh").onclick=()=>carregar();
+function aplicarMercado(){
+  $("#segM").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===MERCADO));
+  $("#rrgTit").textContent="Rotação setorial × "+MK().bench;
+  document.querySelector(".brand h1").innerHTML=MERCADO==="cripto"?"Radar <b>de</b> <i>Blocos</i> Cripto":"Radar <b>de</b> <i>Blocos</i> B3";
+}
+$("#segM").onclick=e=>{ const m=e.target.dataset.m; if(!m||m===MERCADO) return; MERCADO=m; store.set("rb3_mercado",m); BT=null; ST.sel=null; aplicarMercado(); carregar(); };
+aplicarMercado();
 $("#btnReal").onclick=()=>{ store.del("rb3_modo"); carregar(); };
 $("#btnDemo").onclick=()=>{ store.set("rb3_modo","demo"); log("Modo simulado ativado."); carregar(); };
 let rt; window.addEventListener("resize",()=>{ clearTimeout(rt); rt=setTimeout(()=>ST.data&&draw(),150); });
 
-const h0=(location.hash||"").slice(1); if(["raiox","painel","rotacao","grafico","noticias","config"].includes(h0)) show(h0);
+const h0=(location.hash||"").slice(1); if(["raiox","painel","rotacao","grafico","noticias","backtest","config"].includes(h0)) show(h0);
 carregar();
 </script>

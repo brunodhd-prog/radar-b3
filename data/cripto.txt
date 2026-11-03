@@ -1,0 +1,20 @@
+BTC:Referência:Bitcoin
+ETH:Contratos inteligentes:Ethereum
+SOL:Contratos inteligentes:Solana
+ADA:Contratos inteligentes:Cardano
+AVAX:Contratos inteligentes:Avalanche
+DOT:Contratos inteligentes:Polkadot
+TRX:Contratos inteligentes:Tron
+NEAR:Contratos inteligentes:Near Protocol
+ATOM:Contratos inteligentes:Cosmos
+TON:Contratos inteligentes:Toncoin
+BNB:Exchanges:BNB Binance
+XRP:Pagamentos:XRP Ripple
+LTC:Pagamentos:Litecoin
+BCH:Pagamentos:Bitcoin Cash
+XLM:Pagamentos:Stellar
+LINK:DeFi:Chainlink
+UNI:DeFi:Uniswap
+AAVE:DeFi:Aave
+DOGE:Memes:Dogecoin
+SHIB:Memes:Shiba Inu

@@ -26,3 +26,15 @@ Tratamento de erros: 401 interrompe (chave inválida); 403 interrompe (plano); 4
 - Aba Notícias: acerto por horizonte, correlação sentimento × retorno, diferença entre positivas e negativas, acerto por fonte. Os cartões do Painel ganham o selo "notícias ±" quando há sinal nos últimos 3 pregões.
 - Teste sem rede: `python scripts/noticias.py --rss-dir pasta_com_TICKER.xml --sem-modelo`.
 - Não ajuste pesos com menos de ~30 sinais avaliados por horizonte.
+
+## Cripto
+- Seletor B3 | Cripto no topo. A escolha fica salva no navegador.
+- `node scripts/fetch-brapi.mjs --mercado cripto` chama `GET /api/v2/crypto?coin=...&currency=BRL&range=3mo&interval=1d` e grava `data/cripto.json`. Universo em `data/cripto.txt` (19 moedas). O BTC é a referência da rotação setorial e do retorno anormal.
+- A rotina roda cripto também no fim de semana (a cada 2 h). Notícias de cripto são buscadas pelo nome (tickers como ADA, DOT e UNI são palavras comuns) e contam a partir do candle UTC do dia seguinte.
+- Quantidade fracionária, sem lote. Operações de venda em cripto só fazem sentido se a sua corretora permitir vender a descoberto ou operar derivativos.
+
+## Backtest, Time Machine e risco
+- Aba Backtest: 4 estratégias + base aleatória, walk-forward (cada dia usa só candles até ele), entrada na abertura seguinte, stop testado antes do alvo, prazo de 5/10/20 candles. Mostra acerto, média em R, total, fator de lucro, queda máxima e veredito.
+- Gráfico: Time Machine com 10.000 caminhos sorteados dos candles diários do próprio ativo (semente 19), leque de 5–95%, chance de alvo/stop e histórico do ativo no backtest.
+- Configurar: capital, risco por operação, posição máxima, R:R mínimo, lote e vantagem mínima na simulação. Os cartões do Painel mostram quantidade, valor, perda no stop e APROVADO/BLOQUEADO com o motivo.
+- Sem corretagem e sem escorregamento: o resultado real tende a ser pior. 3 meses de dados diários não bastam para conclusão estatística.

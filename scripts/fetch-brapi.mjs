@@ -1,12 +1,20 @@
 // Busca o histórico diário do universo na brapi (/api/v2/stocks/historical) e grava data/b3.json.
 // Chave: variável de ambiente BRAPI_TOKEN (segredo do GitHub Actions). Nunca vai para o repositório nem para a página.
-// Uso: BRAPI_TOKEN=... node scripts/fetch-brapi.mjs [--symbols PETR4,VALE3] [--out data/b3.json]
+// Uso: BRAPI_TOKEN=... node scripts/fetch-brapi.mjs [--mercado b3|cripto] [--symbols PETR4,VALE3] [--out arquivo.json]
+//   b3:     GET /api/v2/stocks/historical?symbols=...  → data/b3.json     (universo data/universo.txt, referência BOVA11)
+//   cripto: GET /api/v2/crypto?coin=...&currency=BRL   → data/cripto.json (universo data/cripto.txt, referência BTC)
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 
 const BASE = process.env.BRAPI_BASE || "https://brapi.dev"; // sobrescrito só nos testes
 const TOKEN = process.env.BRAPI_TOKEN || "";
-const BENCH = "BOVA11";
+const args0 = process.argv.slice(2);
+const MERCADO = args0.includes("--mercado") && args0[args0.indexOf("--mercado") + 1] === "cripto" ? "cripto" : "b3";
+const CONF = {
+  b3:     { bench: "BOVA11", univ: "../data/universo.txt", out: "../data/b3.json" },
+  cripto: { bench: "BTC",    univ: "../data/cripto.txt",   out: "../data/cripto.json" },
+}[MERCADO];
+const BENCH = CONF.bench;
 const LOTE = 20;          // máx. de símbolos por chamada
 const RANGE = "3mo";      // limite do plano gratuito
 const MAX_TENT = 4;
@@ -43,7 +51,7 @@ async function chamar(path, params, tent = 0) {
 
 // Normaliza um item de results[] tolerando as variações documentadas e campos null.
 export function normalizar(item) {
-  const sym = item?.symbol || item?.requestedSymbol;
+  const sym = item?.symbol || item?.requestedSymbol || item?.coin;
   const serie = item?.data?.historicalDataPrice ?? item?.historicalDataPrice ?? item?.data?.prices ?? item?.prices ?? [];
   const bars = [];
   for (const p of Array.isArray(serie) ? serie : []) {
@@ -54,13 +62,17 @@ export function normalizar(item) {
     bars.push({ d, o, h, l, c, v: num(p?.volume) ?? 0 });
   }
   bars.sort((a, b) => a.d - b.d);
-  const nome = item?.data?.shortName ?? item?.shortName ?? item?.data?.longName ?? item?.longName ?? sym;
+  const nome = item?.data?.shortName ?? item?.shortName ?? item?.data?.longName ?? item?.longName ?? item?.coinName ?? sym;
   const renome = item?.changed && item?.requestedSymbol && item?.symbol && item.requestedSymbol !== item.symbol
     ? { de: item.requestedSymbol, para: item.symbol } : null;
-  return { pedido: item?.requestedSymbol || sym, t: sym, nome, bars, renome, erro: item?.error ? (item?.message || String(item.error)) : null };
+  return { pedido: item?.requestedSymbol || item?.coin || sym, t: sym, nome, bars, renome, erro: item?.error ? (item?.message || String(item.error)) : null };
 }
 
 async function lote(symbols) {
+  if (MERCADO === "cripto") {
+    const body = await chamar("/api/v2/crypto", { coin: symbols.join(","), currency: "BRL", range: RANGE, interval: "1d" });
+    return (body?.coins ?? []).map(normalizar);
+  }
   const body = await chamar("/api/v2/stocks/historical", { symbols: symbols.join(","), range: RANGE, interval: "1d", sortOrder: "asc" });
   return (body?.results ?? []).map(normalizar);
 }
@@ -95,7 +107,7 @@ export async function buscarTodos(lista) {
 export function parseUniverso(txt) {
   const out = [], seen = new Set();
   for (const ln of txt.split(/\r?\n/)) {
-    const m = ln.trim().match(/^([A-Za-z0-9]{4,7})\s*[:;,\t]\s*(.+)$/);
+    const m = ln.trim().match(/^([A-Za-z0-9]{2,7})\s*[:;,\t]\s*(.+)$/);
     if (!m) continue;
     const t = m[1].toUpperCase(); if (seen.has(t)) continue; seen.add(t);
     const [setor, nome] = m[2].split(":").map((x) => x.trim());
@@ -116,15 +128,15 @@ async function main() {
     if (renomes.length) console.log("Renomeados:", renomes);
     return;
   }
-  const univ = parseUniverso(await readFile(new URL("../data/universo.txt", import.meta.url), "utf8"));
+  const univ = parseUniverso(await readFile(new URL(CONF.univ, import.meta.url), "utf8")).filter((u) => u.t !== BENCH);
   const setorDe = new Map(univ.map((u) => [u.t, u.setor]));
   const { ok, falhas, renomes } = await buscarTodos([BENCH, ...univ.map((u) => u.t)]);
   const bench = ok.get(BENCH);
   if (!bench) throw new Error(`${BENCH} indisponível — sem benchmark não há rotação setorial. Falhas: ${falhas.join("; ")}`);
   const stocks = [...ok.values()].filter((r) => r.pedido !== BENCH)
     .map((r) => ({ t: r.t, nome: r.nome, setor: setorDe.get(r.pedido) || "Outros", bars: r.bars }));
-  const out = { fonte: "brapi", ts: Date.now(), bench: { t: BENCH, nome: bench.nome, setor: "Índice", bars: bench.bars }, stocks, falhas, renomes };
-  const arq = args.out || new URL("../data/b3.json", import.meta.url).pathname;
+  const out = { fonte: "brapi", mercado: MERCADO, ts: Date.now(), bench: { t: BENCH, nome: bench.nome, setor: "Referência", bars: bench.bars }, stocks, falhas, renomes };
+  const arq = args.out || new URL(CONF.out, import.meta.url).pathname;
   await mkdir(dirname(arq), { recursive: true });
   await writeFile(arq, JSON.stringify(out));
   console.log(`OK: ${stocks.length} ações + ${BENCH} → ${arq}. Falhas: ${falhas.length}. Renomeados: ${renomes.length}.`);

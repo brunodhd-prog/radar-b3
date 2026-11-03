@@ -25,7 +25,7 @@ UA = "RadarB3/1.0 (+github actions)"
 def ler_universo(txt: str):
     out, vistos = [], set()
     for ln in txt.splitlines():
-        m = re.match(r"^([A-Za-z0-9]{4,7})\s*[:;,\t]\s*(.+)$", ln.strip())
+        m = re.match(r"^([A-Za-z0-9]{2,7})\s*[:;,\t]\s*(.+)$", ln.strip())
         if not m:
             continue
         t = m.group(1).upper()
@@ -42,8 +42,9 @@ def dobrar(s: str) -> str:
 
 
 # ---------------- coleta ----------------
-def url_busca(t: str, nome: str) -> str:
-    q = f'"{t}" OR ({nome}) when:2d'
+def url_busca(t: str, nome: str, mercado: str = "b3") -> str:
+    # cripto: tickers curtos (ADA, DOT, UNI, LINK) são palavras comuns; busca só pelo nome
+    q = f'"{nome}" when:2d' if mercado == "cripto" else f'"{t}" OR ({nome}) when:2d'
     return "https://news.google.com/rss/search?" + urllib.parse.urlencode({"q": q, "hl": "pt-BR", "gl": "BR", "ceid": "BR:pt-419"})
 
 
@@ -75,7 +76,8 @@ def parse_rss(xml: str, t: str, nome: str):
         if not titulo:
             continue
         tf = dobrar(titulo)
-        if t.lower() not in tf and not (len(chave) >= 3 and re.search(rf"\b{re.escape(chave)}\b", tf)):
+        tem_ticker = len(t) >= 5 and re.search(rf"\b{re.escape(t.lower())}\b", tf)
+        if not tem_ticker and not (len(chave) >= 3 and re.search(rf"\b{re.escape(chave)}\b", tf)):
             continue
         try:
             pub = email.utils.parsedate_to_datetime(it.findtext("pubDate") or "")
@@ -91,9 +93,11 @@ def parse_rss(xml: str, t: str, nome: str):
 
 
 # ---------------- sessão efetiva (sem olhar o futuro) ----------------
-def sessao_efetiva(pub_iso: str) -> str:
+def sessao_efetiva(pub_iso: str, mercado: str = "b3") -> str:
     """Pregão em que a notícia pode afetar o preço pela 1ª vez. Feriados são tratados na avaliação
     (o próximo candle existente na série é usado)."""
+    if mercado == "cripto":  # 24/7, candle diário em UTC: conta a partir do dia seguinte (nunca o candle já em curso)
+        return (datetime.fromisoformat(pub_iso).astimezone(timezone.utc).date() + timedelta(days=1)).isoformat()
     local = datetime.fromisoformat(pub_iso).astimezone(SP)
     d = local.date()
     if local.hour >= CORTE_HORA:
@@ -142,12 +146,12 @@ def classificador_teste(textos):
 
 
 # ---------------- avaliação ----------------
-def avaliar(itens, b3):
-    """Retorno anormal (papel − BOVA11) do fechamento anterior à sessão efetiva até k pregões depois."""
+def avaliar(itens, b3, tz=SP):
+    """Retorno anormal (ativo − referência) do fechamento anterior à sessão efetiva até k candles depois."""
     if not b3:
         return
     def serie(s):
-        return [(datetime.fromtimestamp(b["d"], SP).date().isoformat(), b["c"]) for b in s["bars"]]
+        return [(datetime.fromtimestamp(b["d"], tz).date().isoformat(), b["c"]) for b in s["bars"]]
     bench = serie(b3["bench"])
     bmap = dict(bench)
     papeis = {s["t"]: serie(s) for s in b3["stocks"]}
@@ -177,7 +181,10 @@ def main():
     ap.add_argument("--out", default=str(RAIZ / "data/noticias.json"))
     a = ap.parse_args()
 
-    univ = ler_universo((RAIZ / "data/universo.txt").read_text(encoding="utf-8"))
+    univ = [dict(u, mercado="b3") for u in ler_universo((RAIZ / "data/universo.txt").read_text(encoding="utf-8"))]
+    cp = RAIZ / "data/cripto.txt"
+    if cp.exists():
+        univ += [dict(u, mercado="cripto") for u in ler_universo(cp.read_text(encoding="utf-8"))]
     saida = Path(a.out)
     hist = json.loads(saida.read_text(encoding="utf-8")) if saida.exists() else {"itens": []}
     por_id = {it["id"]: it for it in hist.get("itens", [])}
@@ -185,13 +192,14 @@ def main():
     novos, falhas = [], []
     for u in univ:
         try:
-            xml = (Path(a.rss_dir) / f"{u['t']}.xml").read_text(encoding="utf-8") if a.rss_dir else baixar(url_busca(u["t"], u["nome"]))
+            xml = (Path(a.rss_dir) / f"{u['t']}.xml").read_text(encoding="utf-8") if a.rss_dir else baixar(url_busca(u["t"], u["nome"], u["mercado"]))
         except Exception as e:
             falhas.append(f"{u['t']}: {e}")
             continue
         for it in parse_rss(xml, u["t"], u["nome"]):
             if it["id"] not in por_id:
-                it["sessao"] = sessao_efetiva(it["pub"])
+                it["mercado"] = u["mercado"]
+                it["sessao"] = sessao_efetiva(it["pub"], u["mercado"])
                 novos.append(it)
                 por_id[it["id"]] = it
         if not a.rss_dir:
@@ -205,8 +213,10 @@ def main():
     limite = (datetime.now(timezone.utc) - timedelta(days=RETENCAO_DIAS)).isoformat()
     itens = sorted((i for i in por_id.values() if i["pub"] >= limite and "score" in i), key=lambda i: i["pub"], reverse=True)
 
-    b3p = RAIZ / "data/b3.json"
-    avaliar(itens, json.loads(b3p.read_text(encoding="utf-8")) if b3p.exists() else None)
+    for merc, arq, tz in (("b3", "data/b3.json", SP), ("cripto", "data/cripto.json", timezone.utc)):
+        pth = RAIZ / arq
+        if pth.exists():
+            avaliar([i for i in itens if i.get("mercado", "b3") == merc], json.loads(pth.read_text(encoding="utf-8")), tz)
 
     out = {"ts": int(time.time() * 1000), "modelo": "teste" if a.sem_modelo else MODELO, "limiar": LIMIAR,
            "corte_hora": CORTE_HORA, "itens": itens, "falhas": falhas}
