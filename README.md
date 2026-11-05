@@ -38,3 +38,10 @@ Tratamento de erros: 401 interrompe (chave inválida); 403 interrompe (plano); 4
 - Gráfico: Time Machine com 10.000 caminhos sorteados dos candles diários do próprio ativo (semente 19), leque de 5–95%, chance de alvo/stop e histórico do ativo no backtest.
 - Configurar: capital, risco por operação, posição máxima, R:R mínimo, lote e vantagem mínima na simulação. Os cartões do Painel mostram quantidade, valor, perda no stop e APROVADO/BLOQUEADO com o motivo.
 - Sem corretagem e sem escorregamento: o resultado real tende a ser pior. 3 meses de dados diários não bastam para conclusão estatística.
+
+## Skills do Claude neste repositório
+Abrindo o repositório no Claude Code (web ou terminal), estas skills carregam sozinhas a partir de `.claude/skills/`:
+- `radar-trader`: ponte entre o Radar e o pacote day-trader. Decide qual motor usar por mercado e tempo gráfico.
+- `trader-*` (11 skills, MIT, de Jake Schincariol, sem alterações): scanner, news, entry, exit, timemachine, budget, risk, broker (Alpaca, paper), alerts, analyst, pelosi. Feitas para ações dos EUA: o pregão de Nova York está fixo no código, então não servem para a B3. Para cripto intraday, só dentro do horário de Nova York, com pares `-USD`.
+- `node scripts/radar-cli.mjs painel | analisar TICKER | backtest` roda as funções da própria página na linha de comando (`--mercado cripto`, `--json`, `--demo`).
+- Arquivos de estado das skills trader-* ficam em `trader/` (ignorado pelo git: carteira e ordens são pessoais).
